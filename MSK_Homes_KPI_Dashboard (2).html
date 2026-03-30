@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSK Homes — KPI Dashboard · Month 3 of 6</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0; --surface: #ffffff; --surface2: #f1efe8;
+    --border: rgba(0,0,0,0.09); --text: #1a1a18; --text2: #5f5e5a; --text3: #888780;
+    --green: #1D9E75; --green-bg: #e1f5ee; --green-text: #085041;
+    --amber: #BA7517; --amber-bg: #faeeda; --amber-text: #633806;
+    --red: #E24B4A; --red-bg: #fcebeb; --red-text: #501313;
+    --purple: #7F77DD; --purple-bg: #EEEDFE; --purple-text: #26215C;
+    --blue: #378ADD; --orange: #EF9F27;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --surface: #252522; --surface2: #2e2e2b;
+      --border: rgba(255,255,255,0.08); --text: #e8e6df; --text2: #a0a09a; --text3: #666660;
+      --green-bg: #0a2b20; --green-text: #9FE1CB;
+      --amber-bg: #2a1f08; --amber-text: #FAC775;
+      --red-bg: #2a0e0e; --red-text: #F7C1C1;
+      --purple-bg: #1a1940; --purple-text: #CECBF6;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem 5rem; }
+  .container { max-width: 960px; margin: 0 auto; }
+  .header { margin-bottom: 2rem; }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-logo { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #7F77DD, #534AB7); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: #fff; }
+  .brand-name { font-size: 18px; font-weight: 600; }
+  .brand-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .header-badge { background: var(--surface); border: 0.5px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 12px; color: var(--text2); font-weight: 500; }
+  .header-badge strong { color: var(--text); }
+  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border); background: var(--surface); color: var(--text2); transition: all 0.15s; user-select: none; }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin: 1.75rem 0 0.85rem; }
+  .section-label:first-child { margin-top: 0; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 10px; }
+  .metric-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 1rem 1.1rem; }
+  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+  .metric-value { font-size: 24px; font-weight: 600; line-height: 1; }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; margin-top: 8px; }
+  .badge-green { background: var(--green-bg); color: var(--green-text); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-red { background: var(--red-bg); color: var(--red-text); }
+  .badge-purple { background: var(--purple-bg); color: var(--purple-text); }
+  .prog-list { display: flex; flex-direction: column; gap: 10px; }
+  .prog-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; }
+  .prog-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; gap: 4px; }
+  .prog-name { font-size: 13px; font-weight: 600; }
+  .prog-nums { font-size: 12px; color: var(--text2); }
+  .prog-track { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 4px; }
+  .fill-green { background: var(--green); } .fill-amber { background: var(--amber); } .fill-red { background: var(--red); } .fill-purple { background: var(--purple); }
+  .prog-note { font-size: 11px; color: var(--text3); margin-top: 6px; }
+  .chart-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 10px; }
+  .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 1rem; }
+  .chart-wrap { position: relative; width: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .month-tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .month-tab { padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border); background: var(--surface); color: var(--text2); transition: all 0.15s; user-select: none; }
+  .month-tab.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .month-content { display: none; }
+  .month-content.active { display: block; }
+  .plat-tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .plat-tab { padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border); background: var(--surface2); color: var(--text2); transition: all 0.15s; user-select: none; }
+  .plat-tab.active { color: #fff; border-color: transparent; }
+  .plat-tab.ig.active { background: #7F77DD; }
+  .plat-tab.tiktok.active { background: #1a1a1a; }
+  .plat-tab.facebook.active { background: #378ADD; }
+  .plat-tab.ads.active { background: #BA7517; }
+  .plat-content { display: none; }
+  .plat-content.active { display: block; }
+  .wma-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
+  .wma-card { border-radius: var(--radius-sm); padding: 1rem 1.1rem; }
+  .wma-card.win { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .wma-card.miss { background: var(--red-bg); border-left: 3px solid var(--red); }
+  .wma-card.action { background: var(--amber-bg); border-left: 3px solid var(--amber); }
+  .wma-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+  .wma-card.win .wma-title { color: var(--green-text); }
+  .wma-card.miss .wma-title { color: var(--red-text); }
+  .wma-card.action .wma-title { color: var(--amber-text); }
+  .wma-card ul { padding-left: 14px; font-size: 12px; color: var(--text2); line-height: 1.75; }
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  .compare-table th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 10px; border-bottom: 0.5px solid var(--border); }
+  .compare-table td { padding: 9px 10px; border-bottom: 0.5px solid var(--border); color: var(--text2); }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table td:first-child { font-weight: 500; color: var(--text); }
+  .hl { color: var(--green); font-weight: 600; }
+  .lo { color: var(--amber); font-weight: 600; }
+  @media (max-width: 560px) { .metric-grid { grid-template-columns: 1fr 1fr; } .wma-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-logo">MH</div>
+        <div><div class="brand-name">MSK Homes Ghana</div><div class="brand-sub">Digital & Social KPI Tracker</div></div>
+      </div>
+      <div class="header-badge"><strong>Month 3 of 6</strong> &nbsp;·&nbsp; Jan – Mar 2025</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview',this)">Overview</div>
+    <div class="tab" onclick="switchTab('followers',this)">Follower Growth</div>
+    <div class="tab" onclick="switchTab('engagement',this)">Engagement</div>
+    <div class="tab" onclick="switchTab('reach',this)">Reach & Views</div>
+    <div class="tab" onclick="switchTab('ads',this)">Paid Ads</div>
+    <div class="tab" onclick="switchTab('website',this)">Website & Leads</div>
+    <div class="tab" onclick="switchTab('monthly',this)">Monthly Breakdown</div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+    <div class="section-label">At a glance — Month 3 snapshot</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Instagram followers</div><div class="metric-value" style="color:var(--purple)">325</div><div class="metric-sub">Started at 174</div><span class="badge badge-green">+86.8% ✓ KPI hit</span></div>
+      <div class="metric-card"><div class="metric-label">TikTok followers</div><div class="metric-value" style="color:var(--green)">291</div><div class="metric-sub">Started at 4</div><span class="badge badge-green">+7,175% ✓ KPI hit</span></div>
+      <div class="metric-card"><div class="metric-label">Facebook followers</div><div class="metric-value" style="color:var(--blue)">17</div><div class="metric-sub">New page</div><span class="badge badge-amber">Growing</span></div>
+      <div class="metric-card"><div class="metric-label">IG engagement rate</div><div class="metric-value" style="color:var(--purple)">19.9%</div><div class="metric-sub">Best month in March</div><span class="badge badge-green">Strong</span></div>
+      <div class="metric-card"><div class="metric-label">TikTok engagement</div><div class="metric-value" style="color:var(--green)">42.8%</div><div class="metric-sub">Growing each month</div><span class="badge badge-green">Trending up</span></div>
+      <div class="metric-card"><div class="metric-label">Total paid ad views</div><div class="metric-value" style="color:var(--orange)">~99K</div><div class="metric-sub">Feb TikTok + IG ads</div><span class="badge badge-purple">Ads running</span></div>
+      <div class="metric-card"><div class="metric-label">Website visits (Mar)</div><div class="metric-value" style="color:var(--blue)">2,806</div><div class="metric-sub">Via paid ads — £66</div><span class="badge badge-green">Strong</span></div>
+      <div class="metric-card"><div class="metric-label">Contact button clicks</div><div class="metric-value" style="color:var(--blue)">156</div><div class="metric-sub">5.56% funnel conv.</div><span class="badge badge-green">Good funnel</span></div>
+    </div>
+    <div class="section-label">6-month KPI progress</div>
+    <div class="prog-list">
+      <div class="prog-card"><div class="prog-header"><span class="prog-name">Instagram follower growth (+70% target)</span><span class="prog-nums" style="color:var(--green)">+86.8% — ✓ Hit at month 3</span></div><div class="prog-track"><div class="prog-fill fill-green" style="width:100%"></div></div><div class="prog-note">Baseline 174 → Current 325. Target was ≥296.</div></div>
+      <div class="prog-card"><div class="prog-header"><span class="prog-name">TikTok follower growth (+70% target)</span><span class="prog-nums" style="color:var(--green)">+7,175% — ✓ Massively exceeded</span></div><div class="prog-track"><div class="prog-fill fill-green" style="width:100%"></div></div><div class="prog-note">Baseline 4 → Current 291. Feb TikTok ad drove 213 followers alone.</div></div>
+      <div class="prog-card"><div class="prog-header"><span class="prog-name">Instagram & TikTok engagement (+30% target)</span><span class="prog-nums" style="color:var(--green)">On track</span></div><div class="prog-track"><div class="prog-fill fill-green" style="width:80%"></div></div><div class="prog-note">IG Mar: 19.9% · TikTok Mar: 42.8%. Feb dip was a one-off from follower surge.</div></div>
+      <div class="prog-card"><div class="prog-header"><span class="prog-name">Facebook engagement (+20% target)</span><span class="prog-nums" style="color:var(--amber)">Needs improvement</span></div><div class="prog-track"><div class="prog-fill fill-amber" style="width:22%"></div></div><div class="prog-note">Jan 1.6% · Feb 0.25% · Mar 0.54%. Viral reach didn't convert to engaged community.</div></div>
+      <div class="prog-card"><div class="prog-header"><span class="prog-name">Ad metrics — CPC / CPL / conversion rate</span><span class="prog-nums" style="color:var(--green)">Data available Feb & Mar</span></div><div class="prog-track"><div class="prog-fill fill-purple" style="width:55%"></div></div><div class="prog-note">Mar: £0.42 per contact click · 5.56% funnel conversion · 2,806 landing page visits.</div></div>
+      <div class="prog-card"><div class="prog-header"><span class="prog-name">Website metrics (clicks, forms, chat)</span><span class="prog-nums" style="color:var(--amber)">Partially tracked</span></div><div class="prog-track"><div class="prog-fill fill-amber" style="width:35%"></div></div><div class="prog-note">Landing page visits tracked via ads. Organic link taps and form submissions not yet captured.</div></div>
+    </div>
+  </div>
+
+  <!-- FOLLOWERS -->
+  <div class="panel" id="panel-followers">
+    <div class="section-label">Total followers over time</div>
+    <div class="chart-card"><div class="chart-title">Followers by platform — Baseline to March</div><div class="chart-wrap" style="height:280px"><canvas id="followersChart"></canvas></div><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#7F77DD"></div>Instagram</div><div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>TikTok</div><div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>Facebook</div></div></div>
+    <div class="chart-card"><div class="chart-title">New followers gained per month</div><div class="chart-wrap" style="height:220px"><canvas id="newFollowersChart"></canvas></div><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#7F77DD"></div>Instagram</div><div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>TikTok</div><div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>Facebook</div></div></div>
+    <div class="section-label">KPI status</div>
+    <div class="prog-list">
+      <div class="prog-card"><div class="prog-header"><span class="prog-name">Instagram — target +70% (≥296)</span><span class="prog-nums" style="color:var(--green)">325 · +86.8% ✓</span></div><div class="prog-track"><div class="prog-fill fill-green" style="width:100%"></div></div><div class="prog-note">Achieved at month 3. Grow to 350+ by end of month 6.</div></div>
+      <div class="prog-card"><div class="prog-header"><span class="prog-name">TikTok — target +70% (≥7)</span><span class="prog-nums" style="color:var(--green)">291 · +7,175% ✓</span></div><div class="prog-track"><div class="prog-fill fill-green" style="width:100%"></div></div><div class="prog-note">Massively exceeded. Feb TikTok ad drove 213 of these alone.</div></div>
+      <div class="prog-card"><div class="prog-header"><span class="prog-name">Facebook — new page, no baseline set</span><span class="prog-nums" style="color:var(--orange)">17 followers</span></div><div class="prog-track"><div class="prog-fill fill-amber" style="width:28%"></div></div><div class="prog-note">Growing slowly. Target: 50 by month 6 via cross-promotion from IG and TikTok.</div></div>
+    </div>
+  </div>
+
+  <!-- ENGAGEMENT -->
+  <div class="panel" id="panel-engagement">
+    <div class="section-label">Engagement rate trend</div>
+    <div class="chart-card"><div class="chart-title">Engagement rate (%) — all platforms Jan to Mar</div><div class="chart-wrap" style="height:260px"><canvas id="engagementChart"></canvas></div><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#7F77DD"></div>Instagram</div><div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>TikTok</div><div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>Facebook</div></div></div>
+    <div class="section-label">Instagram engagement breakdown</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Likes (Mar)</div><div class="metric-value">141</div><div class="metric-sub">Jan 122 · Feb 47</div></div>
+      <div class="metric-card"><div class="metric-label">Comments (Mar)</div><div class="metric-value">18</div><div class="metric-sub">Jan 2 · Feb 0</div></div>
+      <div class="metric-card"><div class="metric-label">Saves (Mar)</div><div class="metric-value">8</div><div class="metric-sub">Jan 0 · Feb 4</div></div>
+      <div class="metric-card"><div class="metric-label">Shares (Mar)</div><div class="metric-value">20</div><div class="metric-sub">Jan 3 · Feb 4</div></div>
+      <div class="metric-card"><div class="metric-label">Reposts (Mar)</div><div class="metric-value">25</div><div class="metric-sub">Jan 0 · Feb 6</div></div>
+      <div class="metric-card"><div class="metric-label">Total engagement</div><div class="metric-value">239</div><div class="metric-sub">Jan 139 · Feb 168</div></div>
+    </div>
+    <div class="section-label">TikTok engagement breakdown</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Likes (Mar)</div><div class="metric-value">738</div><div class="metric-sub">Jan 155 · Feb 2,400</div></div>
+      <div class="metric-card"><div class="metric-label">Comments (Mar)</div><div class="metric-value">33</div><div class="metric-sub">Jan 6 · Feb 17</div></div>
+      <div class="metric-card"><div class="metric-label">Shares (Mar)</div><div class="metric-value">20</div><div class="metric-sub">Jan 1 · Feb 37</div></div>
+      <div class="metric-card"><div class="metric-label">Saves (Mar)</div><div class="metric-value">23</div><div class="metric-sub">Jan 4 · Feb 15</div></div>
+      <div class="metric-card"><div class="metric-label">Avg watch time</div><div class="metric-value">7.1s</div><div class="metric-sub">Jan 4.9s · Feb 5.7s</div></div>
+      <div class="metric-card"><div class="metric-label">Engagement rate</div><div class="metric-value">42.8%</div><div class="metric-sub">Jan 6.2% · Feb 24.4%</div></div>
+    </div>
+    <div class="section-label">Facebook engagement breakdown</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Post interactions (Mar)</div><div class="metric-value">68</div><div class="metric-sub">Jan 12 · Feb 548</div></div>
+      <div class="metric-card"><div class="metric-label">Reels interactions (Mar)</div><div class="metric-value">67</div><div class="metric-sub">Jan 7 · Feb 548</div></div>
+      <div class="metric-card"><div class="metric-label">Link clicks (Mar)</div><div class="metric-value">7,300</div><div class="metric-sub">Jan 0 · Feb 2,700</div></div>
+      <div class="metric-card"><div class="metric-label">Engagement rate</div><div class="metric-value">0.54%</div><div class="metric-sub">Jan 1.6% · Feb 0.25%</div></div>
+    </div>
+  </div>
+
+  <!-- REACH -->
+  <div class="panel" id="panel-reach">
+    <div class="section-label">Reach & views by platform</div>
+    <div class="chart-card"><div class="chart-title">Organic reach / views — Jan to Mar (Facebook Feb was a viral spike)</div><div class="chart-wrap" style="height:300px"><canvas id="reachChart"></canvas></div><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#7F77DD"></div>Instagram reach</div><div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>TikTok views</div><div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>Facebook views</div></div></div>
+    <div class="section-label">Instagram awareness</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Reach (Mar)</div><div class="metric-value">1,203</div><div class="metric-sub">Jan 791 · Feb 9,528</div></div>
+      <div class="metric-card"><div class="metric-label">Views (Mar)</div><div class="metric-value">3,506</div><div class="metric-sub">Jan 3,934 · Feb 14,502</div></div>
+      <div class="metric-card"><div class="metric-label">Profile visits (Mar)</div><div class="metric-value">108</div><div class="metric-sub">Jan 158 · Feb 257</div></div>
+      <div class="metric-card"><div class="metric-label">Link taps (Mar)</div><div class="metric-value">6</div><div class="metric-sub">Jan 2 · Feb 2</div></div>
+    </div>
+    <div class="section-label">TikTok awareness</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Post views (Mar)</div><div class="metric-value">1,900</div><div class="metric-sub">Jan 2,691 · Feb 10,100</div></div>
+      <div class="metric-card"><div class="metric-label">For You Page %</div><div class="metric-value">95.9%</div><div class="metric-sub">Jan 88.3% · Feb 98.2%</div></div>
+      <div class="metric-card"><div class="metric-label">Total viewers</div><div class="metric-value">1,900</div><div class="metric-sub">Jan 1,765 · Feb 89,090</div></div>
+      <div class="metric-card"><div class="metric-label">New viewers (Mar)</div><div class="metric-value">1,800</div><div class="metric-sub">Jan 1,649 · Feb 20,068</div></div>
+    </div>
+    <div class="section-label">Facebook awareness</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Views (Mar)</div><div class="metric-value">12,600</div><div class="metric-sub">Jan 734 · Feb 220,800</div></div>
+      <div class="metric-card"><div class="metric-label">Viewers (Mar)</div><div class="metric-value">9,300</div><div class="metric-sub">Jan 649 · Feb 132,800</div></div>
+      <div class="metric-card"><div class="metric-label">Profile visits (Mar)</div><div class="metric-value">227</div><div class="metric-sub">Jan 10 · Feb 323</div></div>
+      <div class="metric-card"><div class="metric-label">Link clicks (Mar)</div><div class="metric-value">7,300</div><div class="metric-sub">Jan 0 · Feb 2,700</div></div>
+    </div>
+  </div>
+
+  <!-- ADS -->
+  <div class="panel" id="panel-ads">
+    <div class="section-label">February ads — TikTok vs Instagram</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">TikTok ad views</div><div class="metric-value" style="color:var(--green)">88,456</div><div class="metric-sub">Spend: £63</div><span class="badge badge-green">£0.00071 / view</span></div>
+      <div class="metric-card"><div class="metric-label">TikTok ad likes</div><div class="metric-value" style="color:var(--green)">23,557</div><div class="metric-sub">26.6% engagement rate</div><span class="badge badge-green">Very high</span></div>
+      <div class="metric-card"><div class="metric-label">New followers (TikTok ad)</div><div class="metric-value" style="color:var(--green)">213</div><div class="metric-sub">0.24% conv. rate</div><span class="badge badge-purple">Paid</span></div>
+      <div class="metric-card"><div class="metric-label">TikTok avg watch time</div><div class="metric-value" style="color:var(--green)">8.13s</div><div class="metric-sub">Completion: 2.86%</div><span class="badge badge-amber">Low retention</span></div>
+      <div class="metric-card"><div class="metric-label">IG ad views</div><div class="metric-value" style="color:var(--purple)">10,640</div><div class="metric-sub">Spend: ~$44.86</div><span class="badge badge-amber">$0.0042 / view</span></div>
+      <div class="metric-card"><div class="metric-label">IG ad reach</div><div class="metric-value" style="color:var(--purple)">8,379</div><div class="metric-sub">182 profile visits</div><span class="badge badge-purple">1.71% visit rate</span></div>
+      <div class="metric-card"><div class="metric-label">IG ad engagement</div><div class="metric-value" style="color:var(--purple)">222</div><div class="metric-sub">Likes 193 · Saves 20</div><span class="badge badge-amber">2.1% rate</span></div>
+      <div class="metric-card"><div class="metric-label">Cost advantage</div><div class="metric-value" style="color:var(--orange)">6×</div><div class="metric-sub">TikTok cheaper per view</div><span class="badge badge-green">TikTok wins reach</span></div>
+    </div>
+    <div class="section-label">March ads — Traffic & conversion campaign</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Total reach</div><div class="metric-value" style="color:var(--blue)">48,186</div><div class="metric-sub">Impressions: 78,493</div></div>
+      <div class="metric-card"><div class="metric-label">Video views</div><div class="metric-value" style="color:var(--blue)">22,821</div><div class="metric-sub">Spend: £66.06</div></div>
+      <div class="metric-card"><div class="metric-label">Landing page visits</div><div class="metric-value" style="color:var(--green)">2,806</div><div class="metric-sub">Cost: £0.0166 each</div><span class="badge badge-green">Very efficient</span></div>
+      <div class="metric-card"><div class="metric-label">Contact button clicks</div><div class="metric-value" style="color:var(--green)">156</div><div class="metric-sub">Cost: £0.42 each</div><span class="badge badge-green">5.56% conv.</span></div>
+      <div class="metric-card"><div class="metric-label">CTR</div><div class="metric-value" style="color:var(--blue)">3.57%</div><div class="metric-sub">UK audience: 10.2%</div><span class="badge badge-green">Strong</span></div>
+      <div class="metric-card"><div class="metric-label">Avg watch time</div><div class="metric-value" style="color:var(--blue)">8.94s</div><div class="metric-sub">Completion: 1.67%</div><span class="badge badge-amber">Low retention</span></div>
+      <div class="metric-card"><div class="metric-label">Best market</div><div class="metric-value" style="color:var(--blue)">Ghana</div><div class="metric-sub">25–34 age group</div><span class="badge badge-green">2,801 visits</span></div>
+      <div class="metric-card"><div class="metric-label">Best platform</div><div class="metric-value" style="color:var(--blue)">Facebook</div><div class="metric-sub">Drove majority of results</div><span class="badge badge-purple">Dominant</span></div>
+    </div>
+    <div class="section-label">February vs March — strategic comparison</div>
+    <div class="chart-card">
+      <table class="compare-table">
+        <thead><tr><th>Metric</th><th>February</th><th>March</th></tr></thead>
+        <tbody>
+          <tr><td>Objective</td><td>Views / Awareness</td><td>Website Traffic</td></tr>
+          <tr><td>Total paid views</td><td class="hl">~99K (TikTok + IG)</td><td>22,821</td></tr>
+          <tr><td>Ad spend</td><td>£63 + ~$45</td><td class="hl">£66.06</td></tr>
+          <tr><td>Cost per view</td><td class="hl">£0.00071 (TikTok)</td><td>£0.0166</td></tr>
+          <tr><td>Landing page visits</td><td>—</td><td class="hl">2,806</td></tr>
+          <tr><td>Contact / lead clicks</td><td>—</td><td class="hl">156 (5.56% conv.)</td></tr>
+          <tr><td>New followers from ads</td><td class="hl">213 (TikTok)</td><td>35</td></tr>
+          <tr><td>Avg watch time</td><td>8.13s</td><td class="hl">8.94s</td></tr>
+          <tr><td>Completion rate</td><td class="hl">2.86%</td><td class="lo">1.67%</td></tr>
+          <tr><td>Best platform</td><td>TikTok (reach)</td><td class="hl">Facebook (conversions)</td></tr>
+          <tr><td>Top market</td><td>—</td><td class="hl">Ghana · UK high CTR (10.2%)</td></tr>
+          <tr><td>Overall shift</td><td>Awareness</td><td class="hl">Conversion — better business outcome</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-label">Ad volume comparison</div>
+    <div class="chart-card"><div class="chart-title">Views, visits & reach across Feb and Mar ads</div><div class="chart-wrap" style="height:240px"><canvas id="adChart"></canvas></div></div>
+  </div>
+
+  <!-- WEBSITE & LEADS -->
+  <div class="panel" id="panel-website">
+    <div class="section-label">Website & link tracking</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">IG link taps (total)</div><div class="metric-value">10</div><div class="metric-sub">Jan 2 · Feb 2 · Mar 6</div><span class="badge badge-amber">Low — add CTA</span></div>
+      <div class="metric-card"><div class="metric-label">FB link clicks (total)</div><div class="metric-value">~10k</div><div class="metric-sub">Feb 2.7k · Mar 7.3k</div><span class="badge badge-green">Trending up</span></div>
+      <div class="metric-card"><div class="metric-label">Landing page visits</div><div class="metric-value">2,806</div><div class="metric-sub">Via Mar paid ads</div><span class="badge badge-green">Strong</span></div>
+      <div class="metric-card"><div class="metric-label">Contact button clicks</div><div class="metric-value">156</div><div class="metric-sub">5.56% conversion</div><span class="badge badge-green">Good funnel</span></div>
+      <div class="metric-card"><div class="metric-label">Website form submissions</div><div class="metric-value">—</div><div class="metric-sub">Not yet tracked</div><span class="badge badge-red">Set up tracking</span></div>
+      <div class="metric-card"><div class="metric-label">Chat widget interactions</div><div class="metric-value">—</div><div class="metric-sub">Not yet tracked</div><span class="badge badge-red">Set up tracking</span></div>
+      <div class="metric-card"><div class="metric-label">WhatsApp / call clicks</div><div class="metric-value">—</div><div class="metric-sub">Not yet tracked</div><span class="badge badge-red">Add tracking link</span></div>
+      <div class="metric-card"><div class="metric-label">DM inquiries (IG + FB)</div><div class="metric-value">—</div><div class="metric-sub">Not yet captured</div><span class="badge badge-red">Action needed</span></div>
+    </div>
+    <div class="section-label">Lead funnel — March ads</div>
+    <div class="chart-card"><div class="chart-title">Funnel: Impressions → Reach → Views → Visits → Contacts</div><div class="chart-wrap" style="height:240px"><canvas id="funnelChart"></canvas></div></div>
+  </div>
+
+  <!-- MONTHLY BREAKDOWN -->
+  <div class="panel" id="panel-monthly">
+    <div class="section-label">Select a month</div>
+    <div class="month-tabs">
+      <div class="month-tab active" onclick="switchMonth('jan',this)">January</div>
+      <div class="month-tab" onclick="switchMonth('feb',this)">February</div>
+      <div class="month-tab" onclick="switchMonth('mar',this)">March</div>
+    </div>
+
+    <!-- JANUARY -->
+    <div class="month-content active" id="month-jan">
+      <div class="plat-tabs">
+        <div class="plat-tab ig active" onclick="switchPlat('jan','ig',this)">Instagram</div>
+        <div class="plat-tab tiktok" onclick="switchPlat('jan','tiktok',this)">TikTok</div>
+        <div class="plat-tab facebook" onclick="switchPlat('jan','facebook',this)">Facebook</div>
+      </div>
+      <div class="plat-content active" id="jan-ig">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Followers</div><div class="metric-value">185</div><div class="metric-sub">Baseline 174 · +11 net</div></div>
+          <div class="metric-card"><div class="metric-label">Reach</div><div class="metric-value">791</div><div class="metric-sub">Baseline was 11 — 72x growth</div></div>
+          <div class="metric-card"><div class="metric-label">Views</div><div class="metric-value">3,934</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Engagement rate</div><div class="metric-value">17.6%</div><div class="metric-sub">Best IG quarter rate</div></div>
+          <div class="metric-card"><div class="metric-label">Total engagement</div><div class="metric-value">139</div><div class="metric-sub">Likes 122 · Comments 2</div></div>
+          <div class="metric-card"><div class="metric-label">Story interactions</div><div class="metric-value">44</div><div class="metric-sub">Polls + replies + Q&A</div></div>
+          <div class="metric-card"><div class="metric-label">Posts</div><div class="metric-value">8</div><div class="metric-sub">5 reels · 35 stories</div></div>
+          <div class="metric-card"><div class="metric-label">Link taps</div><div class="metric-value">2</div><div class="metric-sub">—</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>Reach grew 72x from baseline (11→791)</li><li>Highest IG engagement rate of the quarter (17.6%)</li><li>44 story interactions — audience engaging with polls</li><li>5 reels posted — solid first-month output</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Zero saves — content not being bookmarked</li><li>Only 2 link taps — bio CTA not driving clicks</li><li>Low comment count (2) — no conversation sparked</li><li>Slow net follower growth (+12)</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Add "Save this post" CTA on educational content</li><li>Update bio link to a direct booking/enquiry page</li><li>Use question stickers in stories to drive comments</li><li>Post property showcase reels to encourage saves</li></ul></div>
+        </div>
+      </div>
+      <div class="plat-content" id="jan-tiktok">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Followers</div><div class="metric-value">10</div><div class="metric-sub">Baseline 4 · +6 new</div></div>
+          <div class="metric-card"><div class="metric-label">Post views</div><div class="metric-value">2,691</div><div class="metric-sub">88.3% from For You Page</div></div>
+          <div class="metric-card"><div class="metric-label">Likes</div><div class="metric-value">155</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Comments</div><div class="metric-value">6</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Engagement rate</div><div class="metric-value">6.2%</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Avg watch time</div><div class="metric-value">4.9s</div><div class="metric-sub">—</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>Account launched — 2,691 views in first month</li><li>88.3% of views from For You Page — great discovery</li><li>155 likes — content resonating visually</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Only 6 new followers — low view-to-follow conversion</li><li>Low saves (4) and shares (1)</li><li>4.9s avg watch time — hooks need to be stronger</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Add a strong hook in the first 2 seconds</li><li>End videos with a CTA: "Follow for property deals"</li><li>Post consistently — TikTok rewards frequency</li></ul></div>
+        </div>
+      </div>
+      <div class="plat-content" id="jan-facebook">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Followers</div><div class="metric-value">7</div><div class="metric-sub">New page — started at 0</div></div>
+          <div class="metric-card"><div class="metric-label">Views</div><div class="metric-value">734</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Viewers</div><div class="metric-value">649</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Post interactions</div><div class="metric-value">12</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Profile visits</div><div class="metric-value">10</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Engagement rate</div><div class="metric-value">1.6%</div><div class="metric-sub">Best Facebook month</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>Page launched — 7 early followers gained</li><li>734 views from a standing start</li><li>1.6% engagement rate — best Facebook month of the quarter</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Very limited overall reach and visibility</li><li>Zero link clicks — no website traffic generated</li><li>No reels strategy yet on Facebook</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Cross-post TikTok reels to Facebook</li><li>Add a booking / enquiry link to every post</li><li>Invite IG followers to follow the Facebook page</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEBRUARY -->
+    <div class="month-content" id="month-feb">
+      <div class="plat-tabs">
+        <div class="plat-tab ig active" onclick="switchPlat('feb','ig',this)">Instagram</div>
+        <div class="plat-tab tiktok" onclick="switchPlat('feb','tiktok',this)">TikTok</div>
+        <div class="plat-tab facebook" onclick="switchPlat('feb','facebook',this)">Facebook</div>
+        <div class="plat-tab ads" onclick="switchPlat('feb','ads',this)">Paid Ads</div>
+      </div>
+      <div class="plat-content active" id="feb-ig">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Followers</div><div class="metric-value">300</div><div class="metric-sub">+147 new · +79% growth</div></div>
+          <div class="metric-card"><div class="metric-label">Reach</div><div class="metric-value">9,528</div><div class="metric-sub">12x January</div></div>
+          <div class="metric-card"><div class="metric-label">Views</div><div class="metric-value">14,502</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Engagement rate</div><div class="metric-value">1.76%</div><div class="metric-sub">Dropped from Jan 17.6%</div></div>
+          <div class="metric-card"><div class="metric-label">Likes</div><div class="metric-value">47</div><div class="metric-sub">Down from Jan 122</div></div>
+          <div class="metric-card"><div class="metric-label">Story interactions</div><div class="metric-value">107</div><div class="metric-sub">2x January</div></div>
+          <div class="metric-card"><div class="metric-label">Posts</div><div class="metric-value">9</div><div class="metric-sub">6 reels · 30 stories</div></div>
+          <div class="metric-card"><div class="metric-label">Profile visits</div><div class="metric-value">257</div><div class="metric-sub">Up from 158 in Jan</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>Follower growth of 79% in a single month (+147)</li><li>Reach jumped 12x (791→9,528)</li><li>Story interactions doubled to 107</li><li>Profile visits increased to 257</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Engagement rate crashed to 1.76% — new followers not engaging</li><li>Likes fell from 122 to 47 — static posts underperformed reels</li><li>Reach spike may be one viral post — not consistent</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Prioritize reels over static posts</li><li>Nurture new followers with welcome / intro content</li><li>Identify which post drove the reach spike and replicate it</li></ul></div>
+        </div>
+      </div>
+      <div class="plat-content" id="feb-tiktok">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Followers</div><div class="metric-value">238</div><div class="metric-sub">+228 new this month</div></div>
+          <div class="metric-card"><div class="metric-label">Post views</div><div class="metric-value">10,100</div><div class="metric-sub">4x January</div></div>
+          <div class="metric-card"><div class="metric-label">Likes</div><div class="metric-value">2,400</div><div class="metric-sub">15x January</div></div>
+          <div class="metric-card"><div class="metric-label">Comments</div><div class="metric-value">17</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Engagement rate</div><div class="metric-value">24.4%</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Avg watch time</div><div class="metric-value">5.7s</div><div class="metric-sub">Up from Jan 4.9s</div></div>
+          <div class="metric-card"><div class="metric-label">Total viewers</div><div class="metric-value">89,090</div><div class="metric-sub">Incl. paid ad viewers</div></div>
+          <div class="metric-card"><div class="metric-label">New viewers</div><div class="metric-value">20,068</div><div class="metric-sub">—</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>Explosive growth — 228 new followers in one month</li><li>2,400 likes — content highly appreciated</li><li>89K total viewers across organic + paid</li><li>Watch time improved to 5.7s</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Ad completion rate only 2.86% — hook retention weak</li><li>Low follower conversion from ad views (0.24%)</li><li>Low shares (37) relative to view volume</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Stronger opening hook in first 2 seconds</li><li>Add clear follow CTA mid-video and at end</li><li>Retarget viewers who watched 5+ seconds</li></ul></div>
+        </div>
+      </div>
+      <div class="plat-content" id="feb-facebook">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Followers</div><div class="metric-value">12</div><div class="metric-sub">+5 new</div></div>
+          <div class="metric-card"><div class="metric-label">Views</div><div class="metric-value">220,800</div><div class="metric-sub">Viral spike — 300x Jan</div></div>
+          <div class="metric-card"><div class="metric-label">Viewers</div><div class="metric-value">132,800</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Post interactions</div><div class="metric-value">548</div><div class="metric-sub">46x January</div></div>
+          <div class="metric-card"><div class="metric-label">Profile visits</div><div class="metric-value">323</div><div class="metric-sub">32x January</div></div>
+          <div class="metric-card"><div class="metric-label">Link clicks</div><div class="metric-value">2,700</div><div class="metric-sub">First month with clicks</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>220,800 views — massive viral spike</li><li>2,700 link clicks — first significant website traffic</li><li>548 post interactions — best Facebook engagement month</li><li>Profile visits surged to 323</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Only 5 new followers from 220k views — very low conversion</li><li>Engagement rate dropped to 0.25% despite huge reach</li><li>Viral spike not replicated — one post driving all results</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Identify the viral post — analyse format, topic, timing</li><li>Replicate the content style in multiple variations</li><li>Add a follow prompt and DM CTA to all high-reach posts</li></ul></div>
+        </div>
+      </div>
+      <div class="plat-content" id="feb-ads">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">TikTok ad views</div><div class="metric-value" style="color:var(--green)">88,456</div><div class="metric-sub">Spend: £63</div></div>
+          <div class="metric-card"><div class="metric-label">Cost per view</div><div class="metric-value" style="color:var(--green)">£0.00071</div><div class="metric-sub">Extremely efficient</div></div>
+          <div class="metric-card"><div class="metric-label">TikTok engagement rate</div><div class="metric-value" style="color:var(--green)">26.6%</div><div class="metric-sub">23,557 likes</div></div>
+          <div class="metric-card"><div class="metric-label">New followers (ad)</div><div class="metric-value" style="color:var(--green)">213</div><div class="metric-sub">0.24% follower conv.</div></div>
+          <div class="metric-card"><div class="metric-label">IG ad views</div><div class="metric-value" style="color:var(--purple)">10,640</div><div class="metric-sub">Spend: ~$44.86</div></div>
+          <div class="metric-card"><div class="metric-label">IG profile visit rate</div><div class="metric-value" style="color:var(--purple)">1.71%</div><div class="metric-sub">182 profile visits</div></div>
+          <div class="metric-card"><div class="metric-label">IG engagement rate</div><div class="metric-value" style="color:var(--purple)">2.1%</div><div class="metric-sub">Likes + saves + comments</div></div>
+          <div class="metric-card"><div class="metric-label">TikTok avg watch time</div><div class="metric-value" style="color:var(--orange)">8.13s</div><div class="metric-sub">Completion: 2.86%</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>~99K total paid views across both platforms</li><li>£0.00071 per view on TikTok — 6x cheaper than IG</li><li>26.6% engagement rate on TikTok ad</li><li>213 new TikTok followers driven by the ad</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>2.86% completion rate — people not watching to the end</li><li>Low follower conversion from TikTok (0.24%)</li><li>IG ad engagement relatively low (2.1%) — targeting mismatch</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Fix hooks — first 2 seconds must grab attention</li><li>Add mid-video and end-of-video follow CTAs</li><li>Retarget TikTok viewers who watched 5+ seconds</li><li>Test new IG ad creative with stronger visual hook</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MARCH -->
+    <div class="month-content" id="month-mar">
+      <div class="plat-tabs">
+        <div class="plat-tab ig active" onclick="switchPlat('mar','ig',this)">Instagram</div>
+        <div class="plat-tab tiktok" onclick="switchPlat('mar','tiktok',this)">TikTok</div>
+        <div class="plat-tab facebook" onclick="switchPlat('mar','facebook',this)">Facebook</div>
+        <div class="plat-tab ads" onclick="switchPlat('mar','ads',this)">Paid Ads</div>
+      </div>
+      <div class="plat-content active" id="mar-ig">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Followers</div><div class="metric-value">325</div><div class="metric-sub">+10 new · −12 unfollows</div></div>
+          <div class="metric-card"><div class="metric-label">Reach</div><div class="metric-value">1,203</div><div class="metric-sub">Down from Feb 9,528</div></div>
+          <div class="metric-card"><div class="metric-label">Engagement rate</div><div class="metric-value">19.9%</div><div class="metric-sub">Best month overall</div></div>
+          <div class="metric-card"><div class="metric-label">Comments</div><div class="metric-value">18</div><div class="metric-sub">9x February</div></div>
+          <div class="metric-card"><div class="metric-label">Shares</div><div class="metric-value">20</div><div class="metric-sub">5x February</div></div>
+          <div class="metric-card"><div class="metric-label">Reposts</div><div class="metric-value">25</div><div class="metric-sub">Up from 6 in Feb</div></div>
+          <div class="metric-card"><div class="metric-label">Saves</div><div class="metric-value">8</div><div class="metric-sub">2x February</div></div>
+          <div class="metric-card"><div class="metric-label">Posts</div><div class="metric-value">10</div><div class="metric-sub">8 reels · 38 stories</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>Best IG engagement rate of the quarter (19.9%)</li><li>Comments, shares, reposts all hit new highs</li><li>8 reels — highest reel output month</li><li>38 stories — most active stories month</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Reach dropped significantly (9,528→1,203)</li><li>Net follower growth went negative (−2)</li><li>New followers very low (only 10)</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Investigate what drove Feb reach — replicate it</li><li>Use hooks and trending audio to boost reel reach</li><li>Launch DM funnel to convert engaged audience into leads</li><li>Run consistent hashtag strategy on every post</li></ul></div>
+        </div>
+      </div>
+      <div class="plat-content" id="mar-tiktok">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Followers</div><div class="metric-value">291</div><div class="metric-sub">+49 new this month</div></div>
+          <div class="metric-card"><div class="metric-label">Post views</div><div class="metric-value">1,900</div><div class="metric-sub">Down from Feb 10,100</div></div>
+          <div class="metric-card"><div class="metric-label">Likes</div><div class="metric-value">738</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Comments</div><div class="metric-value">33</div><div class="metric-sub">Almost 2x February</div></div>
+          <div class="metric-card"><div class="metric-label">Engagement rate</div><div class="metric-value">42.8%</div><div class="metric-sub">Best TikTok month</div></div>
+          <div class="metric-card"><div class="metric-label">Avg watch time</div><div class="metric-value">7.05s</div><div class="metric-sub">Best watch time month</div></div>
+          <div class="metric-card"><div class="metric-label">Saves</div><div class="metric-value">23</div><div class="metric-sub">Up from 15 in Feb</div></div>
+          <div class="metric-card"><div class="metric-label">Shares</div><div class="metric-value">20</div><div class="metric-sub">—</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>Best TikTok engagement rate of the quarter (42.8%)</li><li>Highest avg watch time (7.05s) — content improving</li><li>49 new followers organically gained</li><li>Comments nearly doubled from February</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Post views dropped significantly (10,100→1,900)</li><li>Completion rate fell (2.59%→1.92%)</li><li>Much lower reach without paid ad support</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Run another paid ad to restore reach levels</li><li>Build on the engagement momentum — content is working</li><li>Add lead capture CTA to high-engagement posts</li></ul></div>
+        </div>
+      </div>
+      <div class="plat-content" id="mar-facebook">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Followers</div><div class="metric-value">17</div><div class="metric-sub">+5 new</div></div>
+          <div class="metric-card"><div class="metric-label">Views</div><div class="metric-value">12,600</div><div class="metric-sub">Down from viral Feb spike</div></div>
+          <div class="metric-card"><div class="metric-label">Viewers</div><div class="metric-value">9,300</div><div class="metric-sub">—</div></div>
+          <div class="metric-card"><div class="metric-label">Post interactions</div><div class="metric-value">68</div><div class="metric-sub">Down from Feb 548</div></div>
+          <div class="metric-card"><div class="metric-label">Profile visits</div><div class="metric-value">227</div><div class="metric-sub">Down from Feb 323</div></div>
+          <div class="metric-card"><div class="metric-label">Link clicks</div><div class="metric-value">7,300</div><div class="metric-sub">Best link click month</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>Link clicks peaked at 7,300 — highest of all three months</li><li>12,600 views — more stable base without viral spike</li><li>227 profile visits despite lower reach</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Massive view drop from 220k to 12.6k</li><li>Post interactions fell from 548 to 68</li><li>Still very low follower growth (+5)</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Facebook is the best conversion platform per Mar ads data — invest more here</li><li>Use the high link click rate to push to a landing page with a lead form</li><li>Boost top-performing organic posts with a small paid budget</li></ul></div>
+        </div>
+      </div>
+      <div class="plat-content" id="mar-ads">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Reach</div><div class="metric-value">48,186</div><div class="metric-sub">Impressions: 78,493</div></div>
+          <div class="metric-card"><div class="metric-label">Ad spend</div><div class="metric-value">£66.06</div><div class="metric-sub">Traffic campaign</div></div>
+          <div class="metric-card"><div class="metric-label">Landing page visits</div><div class="metric-value">2,806</div><div class="metric-sub">Cost: £0.0166 each</div><span class="badge badge-green">Very efficient</span></div>
+          <div class="metric-card"><div class="metric-label">Contact button clicks</div><div class="metric-value">156</div><div class="metric-sub">Cost: £0.42 each</div><span class="badge badge-green">5.56% conv.</span></div>
+          <div class="metric-card"><div class="metric-label">CTR</div><div class="metric-value">3.57%</div><div class="metric-sub">UK audience: 10.2%</div></div>
+          <div class="metric-card"><div class="metric-label">Funnel conversion</div><div class="metric-value">5.56%</div><div class="metric-sub">Click → contact action</div></div>
+          <div class="metric-card"><div class="metric-label">Avg watch time</div><div class="metric-value">8.94s</div><div class="metric-sub">Completion: 1.67%</div></div>
+          <div class="metric-card"><div class="metric-label">Top market</div><div class="metric-value">Ghana</div><div class="metric-sub">25–34 age group dominant</div></div>
+        </div>
+        <div class="wma-grid">
+          <div class="wma-card win"><div class="wma-title">✓ Key wins</div><ul><li>2,806 website visitors from £66 — very efficient</li><li>5.56% funnel conversion — people taking action</li><li>Ghana market: 2,801 of 2,806 visits at £0.02 per visit</li><li>UK audience showing 10.2% CTR — high intent</li></ul></div>
+          <div class="wma-card miss"><div class="wma-title">✗ What didn't work</div><ul><li>Completion rate dropped to 1.67% — retention still weak</li><li>Low engagement rate (1.6%) on ad creative</li><li>UK market under-scaled — high CTR but low volume</li></ul></div>
+          <div class="wma-card action"><div class="wma-title">→ Optimization actions</div><ul><li>Scale Ghana budget — best converting market by far</li><li>Test a UK-specific campaign — high CTR justifies investment</li><li>Improve video hook to lift completion rate past 3%</li><li>Add urgency copy: "Limited units available"</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-monthly -->
+</div><!-- /container -->
+
+<script>
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+    if (name === 'followers' && !window._fc) initFollowerCharts();
+    if (name === 'engagement' && !window._ec) initEngagementChart();
+    if (name === 'reach' && !window._rc) initReachChart();
+    if (name === 'ads' && !window._ac) initAdChart();
+    if (name === 'website' && !window._wc) initFunnelChart();
+  }
+  function switchMonth(m, el) {
+    document.querySelectorAll('.month-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.month-content').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('month-' + m).classList.add('active');
+  }
+  function switchPlat(month, plat, el) {
+    const parent = document.getElementById('month-' + month);
+    parent.querySelectorAll('.plat-tab').forEach(t => t.classList.remove('active'));
+    parent.querySelectorAll('.plat-content').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(month + '-' + plat).classList.add('active');
+  }
+
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const tc = isDark ? '#a0a09a' : '#5f5e5a';
+  const gc = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+
+  function baseScales(yFmt) {
+    return {
+      x: { ticks: { color: tc, font: { size: 12 } }, grid: { display: false }, border: { display: false } },
+      y: { ticks: { color: tc, font: { size: 11 }, callback: yFmt || (v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v) }, grid: { color: gc }, border: { display: false } }
+    };
+  }
+  const noLeg = { legend: { display: false } };
+
+  function initFollowerCharts() {
+    window._fc = true;
+    new Chart(document.getElementById('followersChart'), {
+      type: 'line',
+      data: { labels: ['Baseline','January','February','March'],
+        datasets: [
+          { label:'Instagram', data:[174,185,300,325], borderColor:'#7F77DD', backgroundColor:'rgba(127,119,221,0.07)', tension:0.4, fill:true, pointRadius:5 },
+          { label:'TikTok',    data:[4,10,238,291],    borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,0.07)',  tension:0.4, fill:true, pointRadius:5 },
+          { label:'Facebook',  data:[0,7,12,17],        borderColor:'#378ADD', backgroundColor:'rgba(55,138,221,0.07)', tension:0.4, fill:true, pointRadius:5 }
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:noLeg, scales:baseScales(v=>v) }
+    });
+    new Chart(document.getElementById('newFollowersChart'), {
+      type: 'bar',
+      data: { labels: ['January','February','March'],
+        datasets: [
+          { label:'Instagram', data:[17,147,10],  backgroundColor:'#7F77DD', borderRadius:4 },
+          { label:'TikTok',    data:[6,228,49],   backgroundColor:'#1D9E75', borderRadius:4 },
+          { label:'Facebook',  data:[7,5,5],       backgroundColor:'#378ADD', borderRadius:4 }
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:noLeg, scales:baseScales(v=>v) }
+    });
+  }
+
+  function initEngagementChart() {
+    window._ec = true;
+    new Chart(document.getElementById('engagementChart'), {
+      type: 'line',
+      data: { labels: ['January','February','March'],
+        datasets: [
+          { label:'Instagram', data:[17.57,1.76,19.87], borderColor:'#7F77DD', tension:0.4, pointRadius:6, fill:false },
+          { label:'TikTok',    data:[6.17,24.45,42.84], borderColor:'#1D9E75', tension:0.4, pointRadius:6, fill:false },
+          { label:'Facebook',  data:[1.63,0.25,0.54],   borderColor:'#378ADD', tension:0.4, pointRadius:6, fill:false }
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false,
+        plugins:{ ...noLeg, tooltip:{ callbacks:{ label:c=>' '+c.dataset.label+': '+c.parsed.y.toFixed(1)+'%' } } },
+        scales:baseScales(v=>v.toFixed(0)+'%')
+      }
+    });
+  }
+
+  function initReachChart() {
+    window._rc = true;
+    new Chart(document.getElementById('reachChart'), {
+      type: 'bar',
+      data: { labels: ['January','February','March'],
+        datasets: [
+          { label:'Instagram reach', data:[791,9528,1203],    backgroundColor:'#7F77DD', borderRadius:4 },
+          { label:'TikTok views',    data:[2691,10100,1900],   backgroundColor:'#1D9E75', borderRadius:4 },
+          { label:'Facebook views',  data:[734,220800,12600],  backgroundColor:'#378ADD', borderRadius:4 }
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false,
+        plugins:{ ...noLeg, tooltip:{ callbacks:{ label:c=>' '+c.dataset.label+': '+c.parsed.y.toLocaleString() } } },
+        scales:baseScales()
+      }
+    });
+  }
+
+  function initAdChart() {
+    window._ac = true;
+    new Chart(document.getElementById('adChart'), {
+      type: 'bar',
+      data: { labels: ['Feb TikTok views','Feb IG views','Mar ad reach','Mar page visits'],
+        datasets:[{ label:'Volume', data:[88456,10640,48186,2806], backgroundColor:['#1D9E75','#7F77DD','#378ADD','#EF9F27'], borderRadius:4 }]
+      },
+      options: { responsive:true, maintainAspectRatio:false,
+        plugins:{ ...noLeg, tooltip:{ callbacks:{ label:c=>' '+c.parsed.y.toLocaleString() } } },
+        scales:{ x:{ ticks:{ color:tc, font:{ size:11 }, maxRotation:15 }, grid:{ display:false }, border:{ display:false } }, y:{ ticks:{ color:tc, font:{ size:11 }, callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v }, grid:{ color:gc }, border:{ display:false } } }
+      }
+    });
+  }
+
+  function initFunnelChart() {
+    window._wc = true;
+    new Chart(document.getElementById('funnelChart'), {
+      type: 'bar',
+      data: { labels: ['Impressions','Reach','Video Views','Page Visits','Contact Clicks'],
+        datasets:[{ label:'March ad funnel', data:[78493,48186,22821,2806,156], backgroundColor:['#7F77DD','#534AB7','#378ADD','#1D9E75','#EF9F27'], borderRadius:4 }]
+      },
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ ...noLeg, tooltip:{ callbacks:{ label:c=>' '+c.parsed.x.toLocaleString() } } },
+        scales:{ y:{ ticks:{ color:tc, font:{ size:12 } }, grid:{ display:false }, border:{ display:false } }, x:{ ticks:{ color:tc, font:{ size:11 }, callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v }, grid:{ color:gc }, border:{ display:false } } }
+      }
+    });
+  }
+</script>
+</body>
+</html>
